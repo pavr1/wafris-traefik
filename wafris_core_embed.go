@@ -1,6 +1,7 @@
 package wafris_traefik
 
 var wafris_core_lua string = `
+
 local USE_TIMESTAMPS_AS_REQUEST_IDS = false
 local EXPIRATION_IN_SECONDS = 86400
 local EXPIRATION_OFFSET_IN_SECONDS = 3600
