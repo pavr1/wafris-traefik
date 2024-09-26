@@ -1,3 +1,6 @@
+// pvillalobos: How are you guys handling logs? For production support purposes it'd be good having access to this kind of data.
+// I personally recommend using github.com/sirupsen/logrus. I understand this is a plugin it would be good having some sort of tracking
+// data in case something fails right?
 package wafris_traefik
 
 import (
@@ -50,16 +53,20 @@ func newRedisClient(redisURI string, timeout_duration time.Duration) (*RedisClie
 	// make sure we DO NOT log full url details to prevent leaking of credentials
 	parsedURL, err := url.Parse(redisURI)
 	if err != nil {
+		//pvillalobos: log error
+		//pvillalobos: I noticed these unique codes for errors, maybe we could have a const section where to handle all error messages with their appropriate codes, optional though.
 		derr := fmt.Errorf("9149404555 [Wafris] newRedisConnection url.Parse error: %+v", err)
 		return nil, derr
 	}
 
 	if parsedURL.Scheme != "redis" && parsedURL.Scheme != "rediss" {
+		//pvillalobos: log error
 		derr := fmt.Errorf("9149404556 [Wafris] newRedisConnection unexpected URI scheme: %+v", parsedURL.Scheme)
 		return nil, derr
 	}
 
 	if parsedURL.Opaque != "" {
+		//pvillalobos: log error
 		derr := fmt.Errorf("9149404556 [Wafris] newRedisConnection URI is opaque")
 		return nil, derr
 	}
@@ -68,9 +75,11 @@ func newRedisClient(redisURI string, timeout_duration time.Duration) (*RedisClie
 	if err != nil {
 		// if SplitHostPort fails, most likely, no port is explicitly set and we assume the default redis port
 		host = parsedURL.Host
+		//pvillalobos: hardcoded values, could be configurable
 		port = "6379"
 	}
 	if host == "" {
+		//pvillalobos: hardcoded values, could be configurable
 		host = "localhost"
 	}
 	addr := net.JoinHostPort(host, port)
@@ -96,6 +105,7 @@ func (rc *RedisClient) newRedisConnection() (net.Conn, error) {
 
 	redis_conn, err := net.Dial("tcp", rc.Addr)
 	if err != nil {
+		//pvillalobos: log error
 		derr := fmt.Errorf("1457411044 [Wafris] net dial err: %v", err)
 		return nil, derr
 	}
@@ -105,6 +115,7 @@ func (rc *RedisClient) newRedisConnection() (net.Conn, error) {
 	if rc.Password != "" {
 		err = rc.auth(redis_conn)
 		if err != nil {
+			//pvillalobos: log error
 			derr := fmt.Errorf("92517536889 [Wafris] auth failure: %+v", err)
 			return nil, derr
 		}
@@ -112,6 +123,7 @@ func (rc *RedisClient) newRedisConnection() (net.Conn, error) {
 
 	err = rc.ping(redis_conn)
 	if err != nil {
+		//pvillalobos: log error
 		derr := fmt.Errorf("1552470915 [Wafris] ping failure: %+v", err)
 		return nil, derr
 	}
@@ -141,6 +153,7 @@ func (rc *RedisClient) auth(redis_conn net.Conn) error {
 	redis_conn.SetWriteDeadline(time.Now().Add(rc.Timeout))
 	_, err := redis_conn.Write(auth_bytes)
 	if err != nil {
+		//pvillalobos: log error
 		derr := fmt.Errorf("754593925 [Wafris] net write err: %v", err)
 		return derr
 	}
@@ -160,6 +173,7 @@ func (rc *RedisClient) auth(redis_conn net.Conn) error {
 		if resp == "+OK\r\n" {
 			return nil
 		} else {
+			//pvillalobos: log error
 			derr := fmt.Errorf("91081136888 [Wafris] AUTH response: %+v, %+v", resp, err)
 			return derr
 		}
@@ -171,6 +185,7 @@ func (rc *RedisClient) ping(redis_conn net.Conn) error {
 	redis_conn.SetWriteDeadline(time.Now().Add(rc.Timeout))
 	_, err := redis_conn.Write([]byte("PING\r\n"))
 	if err != nil {
+		//pvillalobos: log error
 		derr := fmt.Errorf("1457411045 [Wafris] net write err: %v", err)
 		return derr
 	}
@@ -189,6 +204,7 @@ func (rc *RedisClient) ping(redis_conn net.Conn) error {
 		if resp == "+PONG\r\n" {
 			return nil
 		} else {
+			//pvillalobos: log error
 			derr := fmt.Errorf("91378563400 [Wafris] unexpected response to PING: %+v", err)
 			return derr
 		}
@@ -206,6 +222,7 @@ func (rc *RedisClient) scriptLoad(redis_conn net.Conn, lua_script string) (strin
 	redis_conn.SetWriteDeadline(time.Now().Add(rc.Timeout))
 	_, err := redis_conn.Write(script_load_bytes)
 	if err != nil {
+		//pvillalobos: log error
 		derr := fmt.Errorf("96355322237 [Wafris] net write err: %v", err)
 		return "", derr
 	}
@@ -215,6 +232,7 @@ func (rc *RedisClient) scriptLoad(redis_conn net.Conn, lua_script string) (strin
 
 	resp, err := parseRedisResponse(bufreader)
 	if err != nil {
+		//pvillalobos: log error
 		derr := fmt.Errorf("93432226744 [Wafris] parseRedisResponse: %+v", err)
 		return "", derr
 	}
@@ -236,6 +254,7 @@ func (rc *RedisClient) evalShaCounter(redis_conn net.Conn, sha string, keys []st
 	redis_conn.SetWriteDeadline(time.Now().Add(rc.Timeout))
 	_, err := redis_conn.Write(evalsha_bytes)
 	if err != nil {
+		//pvillalobos: log error
 		derr := fmt.Errorf("9653235077 [Wafris] net write err: %v", err)
 		return "", derr
 	}
@@ -251,18 +270,21 @@ func (rc *RedisClient) evalShaCounter(redis_conn net.Conn, sha string, keys []st
 		if strings.HasPrefix(string(resp), "-NOSCRIPT") {
 			_, err := rc.scriptLoad(redis_conn, wafris_core_lua)
 			if err != nil {
+				//pvillalobos: log error
 				derr := fmt.Errorf("9413098426 SCRIPT LOAD failure: %+v", err)
 				return "", derr
 			}
 			// try again
+			//pvillalobos: hardcoded retry count, could be configurable
 			if count > 2 {
+				//pvillalobos: log error
 				derr := fmt.Errorf("9413098477 EVALSHA too many retries.v")
 				return "", derr
 			} else {
 				return rc.evalShaCounter(redis_conn, sha, keys, args, count+1)
 			}
 		} else {
-
+			//pvillalobos: log error
 			derr := fmt.Errorf("91091953537 [Wafris] parseRedisResponse: %+v", err)
 			return "", derr
 
@@ -301,6 +323,7 @@ func redisArrayOfBulkStrings(redis_strings []string) []byte {
 func parseRedisResponse(bufreader *bufio.Reader) ([]byte, error) {
 	first_char, err := bufreader.Peek(1)
 	if err != nil {
+		//pvillalobos: log error
 		derr := fmt.Errorf("882366713 [Wafris] redis response parse failure: %+v", err)
 		return nil, derr
 	}
@@ -311,10 +334,12 @@ func parseRedisResponse(bufreader *bufio.Reader) ([]byte, error) {
 	case '-':
 		resp, err := bufreader.ReadSlice('\n')
 		derr := fmt.Errorf("91378563411 [Wafris] parseRedisResponse returned error: %+v, %+v", string(resp), err)
+		//pvillalobos: log error
 		return resp, derr
 	default:
 		resp, err := bufreader.ReadSlice('\n')
 		derr := fmt.Errorf("91378563413 [Wafris] parseRedisResponse unexpected response: %+v, %+v", string(resp), err)
+		//pvillalobos: log error
 		return nil, derr
 	}
 }
@@ -324,6 +349,7 @@ func parseBulkString(bufreader *bufio.Reader) ([]byte, error) {
 
 	first_line, err := bufreader.ReadSlice('\n')
 	if err != nil {
+		//pvillalobos: log error
 		derr := fmt.Errorf("91383384310 [Wafris] parseBulkString read second line failure: %+v", err)
 		return nil, derr
 	}
@@ -333,6 +359,7 @@ func parseBulkString(bufreader *bufio.Reader) ([]byte, error) {
 		resp := strings.TrimSpace(string(first_line))
 		length, err := strconv.ParseInt(resp[1:], 10, 32)
 		if err != nil {
+			//pvillalobos: log error
 			derr := fmt.Errorf("91383384302 [Wafris] ParseInt failure: %+v", err)
 			return nil, derr
 		}
@@ -343,6 +370,7 @@ func parseBulkString(bufreader *bufio.Reader) ([]byte, error) {
 
 		second_line, err := bufreader.ReadSlice('\n')
 		if err != nil {
+			//pvillalobos: log error
 			derr := fmt.Errorf("91383384303 [Wafris] parseBulkString read second line failure: %+v", err)
 			return nil, derr
 		}
@@ -358,10 +386,12 @@ func parseBulkString(bufreader *bufio.Reader) ([]byte, error) {
 	case '-':
 		resp, err := bufreader.ReadSlice('\n')
 		derr := fmt.Errorf("91454862630 [Wafris] parseBulkString returned error: %+v, %+v", resp, err)
+		//pvillalobos: log error
 		return nil, derr
 	default:
 		resp, err := bufreader.ReadSlice('\n')
 		derr := fmt.Errorf("91454862631 [Wafris] parseBulkString unexpected response: %+v, %+v", resp, err)
+		//pvillalobos: log error
 		return nil, derr
 	}
 }

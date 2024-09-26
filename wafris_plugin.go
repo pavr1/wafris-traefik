@@ -47,12 +47,14 @@ func New(ctx context.Context, next http.Handler, config *Config, name string) (h
 
 	rc, err := newRedisClient(config.URL, timeout_duration)
 	if err != nil {
+		//pvillalobos: log error
 		derr := fmt.Errorf("91457411044 [Wafris] newRedisClient err: %v", err)
 		return nil, derr
 	}
 
 	redis_conn, err := rc.newRedisConnection()
 	if err != nil {
+		//pvillalobos: log error
 		derr := fmt.Errorf("93339313776 [Wafris] newRedisConnection failure: %+v", err)
 		return nil, derr
 	}
@@ -61,6 +63,7 @@ func New(ctx context.Context, next http.Handler, config *Config, name string) (h
 
 	sha, err := rc.scriptLoad(redis_conn, wafris_core_lua)
 	if err != nil {
+		//pvillalobos: log error
 		derr := fmt.Errorf("4135098426 [Wafris] SCRIPT LOAD failure: %+v", err)
 		log.Println(derr)
 	}
@@ -113,6 +116,8 @@ func (wtp *WafrisTraefikPlugin) ServeHTTP(rw http.ResponseWriter, req *http.Requ
 
 	if err != nil {
 		derr := fmt.Errorf("92855330633 failure: %+v", err)
+		// how are you handling data logs? recommend using logrus with logzio so you have visibility of possible issues.
+
 		log.Println(derr)
 	} else {
 		// log.Printf("1226800038 [Wafris] Sucessful evalsha script %+v", sha)
@@ -130,6 +135,7 @@ func (wtp *WafrisTraefikPlugin) ServeHTTP(rw http.ResponseWriter, req *http.Requ
 }
 
 // best effort based on x-forwarded-for and RemoteAddr
+// pvillobos: this function could be part of WafrisTraefikPlugin
 func getRealIp(req *http.Request) string {
 	// var err error
 	xff_values := req.Header.Values("x-forwarded-for")
@@ -144,6 +150,7 @@ func getRealIp(req *http.Request) string {
 
 		for _, ip := range xff_values {
 			// log.Debugf("3450939168 req.IsTrustedProxy: %v, %v", ip, IsTrustedProxy(ip))
+			//pvillalobos: this could be a method for a future proxy struct which WafrisTraefikPlugin might have a reference to
 			if !IsTrustedProxy(ip) {
 				// ues this one
 				return ip
@@ -160,6 +167,7 @@ func getRealIp(req *http.Request) string {
 }
 
 // https://andrew.red/posts/golang-ipv4-ipv6-to-decimal-integer
+// pvillobos: this function could be part of WafrisTraefikPlugin
 func Ip2IntString(ip net.IP) string {
 	if ip == nil {
 		return "0"
@@ -170,6 +178,7 @@ func Ip2IntString(ip net.IP) string {
 	return big_int.String()
 }
 
+// pvillobos: this function could be part of WafrisTraefikPlugin
 func writeBlockedResponse(w http.ResponseWriter) error {
 	w.WriteHeader(http.StatusForbidden)
 	io.WriteString(w, "Blocked")

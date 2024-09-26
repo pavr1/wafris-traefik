@@ -64,9 +64,35 @@ func TestIsTrustedProxy(t *testing.T) {
 		"unix:/path/to/socket",
 	}
 
+	//pvillalobos: instead of having 2 different arrays with 2 different loops maybe we could have a single array and loop.
+	//Easier to read and maintain, just like this:
+	// testCases := struct {
+	// 	ip          string
+	// 	expectError bool
+	// }{
+	// 	{
+	// 		ip:          "127.0.0.1",
+	// 		expectError: false,
+	// 	}, {
+	// 		ip:          "237.84.2.178",
+	// 		expectError: true,
+	// 	},
+	// }
+
+	// for _, tst := range testCases {
+	// 	t.Run(tst.ip, func(t *testing.T) {
+	// 		result := IsTrustedProxy(t.ip)
+
+	// 		if result != tst.expectError {
+	// 			...
+	// 		}
+	// 	})
+	// }
+
 	for i, ip_to_test := range should_be_false {
 		t.Run(fmt.Sprintf("index: %d", i), func(t *testing.T) {
 			result := IsTrustedProxy(ip_to_test)
+			//pvillalobos: refactor !result
 			if result != false {
 				t.Errorf("ip_to_test: %s, expected false, but got %v", ip_to_test, result)
 			}
@@ -75,6 +101,7 @@ func TestIsTrustedProxy(t *testing.T) {
 	for i, ip_to_test := range should_be_true {
 		t.Run(fmt.Sprintf("index: %d", i), func(t *testing.T) {
 			result := IsTrustedProxy(ip_to_test)
+			//pvillalobos: refactor result
 			if result != true {
 				t.Errorf("ip_to_test: %s, expected true, but got %v", ip_to_test, result)
 			}
@@ -83,7 +110,7 @@ func TestIsTrustedProxy(t *testing.T) {
 }
 
 func TestIsTrustedProxyRegexp(t *testing.T) {
-
+	//pvillalobos: same as last test
 	should_be_false := []string{
 		"bleair",
 		"",

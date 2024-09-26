@@ -1,5 +1,7 @@
 package wafris_traefik
 
+// pvillalobos: it seems this is the same script as the wafris_core_embed.go, maybe we can create a functionality to retrieve that script out of that file to avoid duplicate code?
+// besides up to this point if a change is done to this script implies a change in the wafris_core_embed.go
 var wafris_core_lua string = `
 
 local USE_TIMESTAMPS_AS_REQUEST_IDS = false

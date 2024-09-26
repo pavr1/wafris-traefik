@@ -9,6 +9,7 @@ import (
 	"strings"
 )
 
+// pvillalobos: it seems these features are simple functions, maybe we can create a struct to hold them?
 const userDefinedProxiesEnvVar string = "TRUSTED_PROXY_RANGES"
 
 var userDefinedProxiesRegexs []*regexp.Regexp
@@ -41,6 +42,8 @@ func LoadUserDefinedProxies() {
 // 1. user defined regexs
 // 2. standard trusted proxy ip ranges
 // 3. localhost hostname, and unix domain sockets
+
+// pvillalobos: not sure I undestand why there is a IsTrustedProxy and isTrustedProxy, maybe this can be refactored to have only IsTrustedProxy and send the custom_regexes along at structure creation.
 func IsTrustedProxy(proxy_to_test string) bool {
 	return isTrustedProxy(proxy_to_test, userDefinedProxiesRegexs)
 }
